@@ -20,13 +20,13 @@ int main(int argc, char *argv[]){
 	struct sockaddr_in serv, from; //address holders
 	struct hostent *hp; //host information
 
-	char orig[256]; //orignial message from flags
+	char message[256]; //orignial message from flags
 	char ret[256]; //returned message from server
-
+	char *action;
 
 	//grab the command line flags
 	int f;
-	while((f = getopt(argc, argv, "p:s:m:")) != -1){
+	while((f = getopt(argc, argv, "p:s:a:h:v:")) != -1){
 		switch(f){
 			//port number
 			case 'p': portno = atoi(optarg);
@@ -42,14 +42,18 @@ int main(int argc, char *argv[]){
 			case 'a': if(strlen(optarg) > 80){
 							 printf("Max message length is 80 characters");
 							 exit(0);
-						 else
-						 	strcpy(orig, optarg);
+						 }
+						 else{
+							 action = malloc(sizeof("/add?") + sizeof(optarg));
+							 sprintf(action, "/add?%s", optarg);
+						 }
 						 break;
 			//header
 			case 'h':
 						 break;
 			//view request
-			case 'v':
+			case 'v': action = malloc(sizeof("/view?") + sizeof(optarg));
+						 sprintf(action, "/view?%s", optarg);
 						 break;
 			//error message
 			default: fprintf(stderr, "Usage: bellower -s <serverIP> -p <serverPort> -m <message>\n");
@@ -76,8 +80,10 @@ int main(int argc, char *argv[]){
 		exit(0);
 	}
 
+	sprintf(message, "GET %s HTTP/1.1\nHost: %s\n", action, hp->h_name);
+
 	//write our message to the socket
-	n = write(sock, orig, 255);
+	n = write(sock, message, 255);
 	if(n < 0){
 		printf("error on write\n");
 		exit(0);
@@ -96,7 +102,7 @@ int main(int argc, char *argv[]){
 	//stop clock and print what we got
 	clock_t toc = clock();
 	double time = (double)(toc - tic) / CLOCKS_PER_SEC;
-	printf("%d	%f	%s	%s\n", att, time, orig, ret);
+	printf("%d	%f	%s	%s\n", att, time, message, ret);
 
 	return 0;
 }

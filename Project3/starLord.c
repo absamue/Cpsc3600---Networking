@@ -69,14 +69,18 @@ void insert(char *newIP){
 	}
 }
 
+
 int main(int argc, char *argv[]){
 	signal(SIGINT, intHandler);
 
 	int sock, newsock, length, n, portno;
 	socklen_t fromlen;
 	char buffer[1024]; //holder for recieved messages
+	char message[156];
+	char process[256];
 	struct sockaddr_in server, from; //address holders
 	char IP[INET_ADDRSTRLEN];
+
 	//get command line flags
 	int f;
 	while((f = getopt(argc, argv, "p:")) != -1){
@@ -118,14 +122,10 @@ int main(int argc, char *argv[]){
 	while(1){
 		//get client file descriptor once they connect
 		newsock = accept(sock, (struct sockaddr *) &from, &fromlen);
-
-		//read the sent message into the buffer
-		bzero(buffer, 256);
-		n = read(newsock, buffer, 255);
-		if(n < 0){
-			printf("Error on read\n");
+		if(newsock == -1){
+			printf("Error on accept\n");
 			exit(0);
-		}
+		}	
 		else{
 			//revieced successful, add to connection count
 			count++;
@@ -135,7 +135,19 @@ int main(int argc, char *argv[]){
 			insert(IP);
 		}
 
-		
+		//get first line
+		int n = read(newsock, process, 255);
+		char method[sizeof(process)];
+		char data[sizeof(process)];
+		char protocol[sizeof(process)];
+		sscanf(process, "%s %s %s", method, data, protocol);
+
+		//check if GET
+		if(!strcmp(method, "GET")){
+			printf("Only GET method allowed\n");
+			char *response = "HTTP/1.1 405 Method Not Allowed";
+		}
+
 
 		//close the client socket
 		close(newsock);
