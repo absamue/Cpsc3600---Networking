@@ -11,6 +11,8 @@
 #include <netinet/in.h>
 #include <signal.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
+#include <time.h>
 
 //node to hold IP's that connect
 struct node{
@@ -76,10 +78,19 @@ int main(int argc, char *argv[]){
 	int sock, newsock, length, n, portno;
 	socklen_t fromlen;
 	char buffer[1024]; //holder for recieved messages
-	char message[156];
 	char process[256];
+	char *response = NULL;
+	char *data = NULL;
 	struct sockaddr_in server, from; //address holders
 	char IP[INET_ADDRSTRLEN];
+	bool add = false;
+	char *date;
+	char *last_modified;
+	char *content;
+	char *Server;
+	char *connection;
+	char *body;
+	char *ret;
 
 	//get command line flags
 	int f;
@@ -137,20 +148,125 @@ int main(int argc, char *argv[]){
 
 		//get first line
 		int n = read(newsock, process, 255);
-		char method[sizeof(process)];
-		char data[sizeof(process)];
-		char protocol[sizeof(process)];
-		sscanf(process, "%s %s %s", method, data, protocol);
 
+		//break message into tokens
+		char *token = strtok(process, " ");
+		
 		//check if GET
-		if(!strcmp(method, "GET")){
+		if(strcmp(token, "GET") != 0){
 			printf("Only GET method allowed\n");
-			char *response = "HTTP/1.1 405 Method Not Allowed";
+			response = "HTTP/1.1 405 Method Not Allowed\nAllow: GET\n";
+			printf("%s\n", token);
+		}
+		
+		//next token, add or view
+		token = strtok(NULL, " ");
+
+		//check if add
+		if(strstr(token, "/add?") != NULL){
+			add = true;
+			//grab the substring of the data parameter
+			if(data != NULL)
+				free(data);
+			data = malloc(sizeof(token) - sizeof("/add?"));
+			char *sub = strstr(token, "/add?");
+			data = sub + 5;
+
+			//add data to the buffer
+
+		}
+		//not add, check if view
+		else if(strstr(token, "/view?") != NULL){
+			//grab the substring of the data parameter
+			if(data != NULL)
+				free(data);
+			data = malloc(sizeof(token) - sizeof("/view?"));
+			char *sub = strstr(token, "/view?");
+			data = sub + 6;
+		}
+		//bad action, give 404
+		else{
+			response = "HTTP/1.1 404 Not Found";
 		}
 
 
+		//get next token, HTTP protocol
+		token = strtok(NULL, " \n");
+
+		//make sure we get 1.1
+		if(strcmp(token, "HTTP/1.1") != 0){
+			response = "HTTP/1.1 400 Bad Request";
+		}
+
+		//get next token, host
+		token = strtok(NULL, " ");
+
+		//check if host header is included
+		if(strcmp(token, "Host:") != 0){
+			printf("Request must include host header\n");
+		}
+		//host included, get the hostname
+		else{
+			//see if we are supposed to add to the buffer
+			if(add == true){
+				//get the hostname
+				token = strtok(NULL, " ");
+				char *hostname = malloc(sizeof(token));
+				hostname = token;
+
+				//build the data entry, data from action followed by host
+				char *add_data = malloc(sizeof(data) + sizeof(hostname) +
+						sizeof(" \n"));
+				strcpy(add_data, data);
+				strcat(add_data, " ");
+				strcat(add_data, hostname);
+				strcat(add_data, "\n");
+
+				//add to the buffer
+				strcat(buffer, add_data);
+
+				//record modified time
+				time_t t = time(NULL);
+				struct tm tm = *localtime(&t);
+				sprintf(last_modified, "Last-Modified: %d-%d %d:%d:%d\n",
+						tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
+						tm.tm_sec);
+			}
+
+		}
+
+		//PROCESSING COMPLETE, build response
+		if(response == NULL)
+			response = "HTTP/1.1 OK\n";
+	
+		connection = "Connection: close\n";
+
+		//get date
+		time_t t = time(NULL);
+		struct tm tm = *localtime(&t);
+		sprintf(date, "Date: %d-%d %d:%d:%d\n",
+				tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
+				tm.tm_sec);
+
+		content = "Content-Type: text/plain\n";
+		Server = "Server: Group5/1.0\n";
+
+		ret = malloc(sizeof(response) + sizeof(date) + sizeof(last_modified) +
+				sizeof(content) + sizeof(Server) + sizeof(connection) +
+				sizeof(body));
+		strcpy(ret, response);
+		strcat(ret, date);
+		strcat(ret, connection);
+		strcat(ret, last_modified);
+		strcat(ret, content);
+		strcat(ret, Server);
+		strcat(ret, body);
+
+		n = write(newsock, ret, sizeof(ret));
+
 		//close the client socket
 		close(newsock);
+		response = NULL;
 	}
 
 	//never reached :(

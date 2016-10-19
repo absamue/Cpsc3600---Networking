@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 #include <time.h>
+#include <stdbool.h>
 
 int main(int argc, char *argv[]){
 	clock_t tic = clock(); //start timer
@@ -22,11 +23,13 @@ int main(int argc, char *argv[]){
 
 	char message[256]; //orignial message from flags
 	char ret[256]; //returned message from server
-	char *action;
+	char *action = NULL;
+	char *data;
+	bool view = false;
 
 	//grab the command line flags
 	int f;
-	while((f = getopt(argc, argv, "p:s:a:h:v:")) != -1){
+	while((f = getopt(argc, argv, "p:s:a:h:v")) != -1){
 		switch(f){
 			//port number
 			case 'p': portno = atoi(optarg);
@@ -44,21 +47,32 @@ int main(int argc, char *argv[]){
 							 exit(0);
 						 }
 						 else{
+							 //set up the add action
 							 action = malloc(sizeof("/add?") + sizeof(optarg));
 							 sprintf(action, "/add?%s", optarg);
+							 
+							 //save the data parameter
+							 data = malloc(sizeof(optarg));
+							 data = optarg;
 						 }
 						 break;
 			//header
 			case 'h':
 						 break;
 			//view request
-			case 'v': action = malloc(sizeof("/view?") + sizeof(optarg));
-						 sprintf(action, "/view?%s", optarg);
+			case 'v': view = true;
 						 break;
 			//error message
 			default: fprintf(stderr, "Usage: bellower -s <serverIP> -p <serverPort> -m <message>\n");
 						break;
 		}
+	}
+
+	if(view == true){
+		if(action != NULL)
+			free(action);
+		action = malloc(sizeof("/view?") + sizeof(data));
+		sprintf(action, "/view?%s", data);
 	}
 
 	//create a datagram socket
