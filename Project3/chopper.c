@@ -97,7 +97,7 @@ int main(int argc, char *argv[]){
 	sprintf(message, "GET %s HTTP/1.1\nHost: %s\n", action, hp->h_name);
 
 	//write our message to the socket
-	n = write(sock, message, 255);
+	n = write(sock, message, sizeof(message));
 	if(n < 0){
 		printf("error on write\n");
 		exit(0);
@@ -107,16 +107,18 @@ int main(int argc, char *argv[]){
 		att++;
 
 	//read returned message from the socket
-	n = read(sock, ret, 255);
+	n = read(sock, ret, sizeof(ret));
 	if(n < 0){
 		printf("error on read\n");
 		exit(0);
 	}
-
+	else{
+		printf("%s", ret);
+	}
 	//stop clock and print what we got
-	clock_t toc = clock();
-	double time = (double)(toc - tic) / CLOCKS_PER_SEC;
-	printf("%d	%f	%s	%s\n", att, time, message, ret);
+//	clock_t toc = clock();
+//	double time = (double)(toc - tic) / CLOCKS_PER_SEC;
+//	printf("%d	%f	%s	%s\n", att, time, message, ret);
 
 	return 0;
 }

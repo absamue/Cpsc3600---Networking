@@ -77,7 +77,7 @@ int main(int argc, char *argv[]){
 
 	int sock, newsock, length, n, portno;
 	socklen_t fromlen;
-	char buffer[1024]; //holder for recieved messages
+	char *buffer = "testing"; //holder for recieved messages
 	char process[256];
 	char *response = NULL;
 	char *data = NULL;
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]){
 	bool add = false;
 	bool view = false;
 	char *date;
-	char *last_modified;
+	char *last_modified = "Last Modified: 4-20 13:3:7\n";
 	char *content;
 	char *Server;
 	char *connection;
@@ -147,8 +147,9 @@ int main(int argc, char *argv[]){
 			insert(IP);
 		}
 
-		//get first line
+		//get message
 		int n = read(newsock, process, 255);
+
 
 		//break message into tokens
 		char *token = strtok(process, " ");
@@ -177,12 +178,11 @@ int main(int argc, char *argv[]){
 		//not add, check if view
 		else if(strstr(token, "/view?") != NULL){
 			view = true;
-			//grab the substring of the data parameter
-			if(data != NULL)
-				free(data);
-			data = malloc(sizeof(token) - sizeof("/view?"));
-			char *sub = strstr(token, "/view?");
-			data = sub + 6;
+
+			body = malloc(sizeof(buffer) + sizeof("\n"));
+			strcpy(body, buffer);
+			strcat(body, "\n");
+
 		}
 		//bad action, give 404
 		else{
@@ -209,6 +209,7 @@ int main(int argc, char *argv[]){
 		else{
 			//see if we are supposed to add to the buffer
 			if(add == true){
+				printf("\n");
 				//get the hostname
 				token = strtok(NULL, " ");
 				char *hostname = malloc(sizeof(token));
@@ -224,12 +225,13 @@ int main(int argc, char *argv[]){
 
 				//add to the buffer
 				strcat(buffer, add_data);
+				printf("%s", buffer);
 
 				//record modified time
 				time_t t = time(NULL);
 				struct tm tm = *localtime(&t);
-				last_modified = malloc(sizeof("Last-Modified:  \n-::") +
-						sizeof(tm.tm_mon) + sizeof(tm.tm_mday) +
+				last_modified = realloc(last_modified, sizeof("Last-Modified:  \n-::") +
+						sizeof(tm.tm_mon+1) + sizeof(tm.tm_mday) +
 						sizeof(tm.tm_hour) + sizeof(tm.tm_min) +
 						sizeof(tm.tm_sec));
 				sprintf(last_modified, "Last-Modified: %d-%d %d:%d:%d\n",
@@ -256,29 +258,25 @@ int main(int argc, char *argv[]){
 				tm.tm_sec);
 
 		content = "Content-Type: text/plain\n";
-		Server = "Server: Group5/1.0\n";
+		Server = "Server: Group5/1.0\n\n";
 
 		if(view == false)
-			body = NULL;
-		else{
-			body = malloc(sizeof(buffer) + sizeof("\n"));
-			strcpy(body, "\n");
-			strcat(body, buffer);
-		}
-//		ret = malloc(sizeof(response) + sizeof(date) + sizeof(last_modified) +
-//				sizeof(content) + sizeof(Server) + sizeof(connection) +
-//				sizeof(body));
-//		strcpy(ret, response);
-//		strcat(ret, date);
-//		strcat(ret, connection);
-//		strcat(ret, last_modified);
-//		strcat(ret, content);
-//		strcat(ret, Server);
-//		strcat(ret, body);
+			body = "\0";
+		
+		ret = malloc(sizeof(response) + sizeof(date) + sizeof(last_modified) +
+				sizeof(content) + sizeof(Server) + sizeof(connection) +
+				sizeof(body));
+//		ret = malloc(sizeof(response) + sizeof(date) + sizeof(connection));
+		
+		strcpy(ret, response);
+		strcat(ret, date);
+		strcat(ret, connection);
+		strcat(ret, last_modified);
+		strcat(ret, content);
+		strcat(ret, Server);
+		strcat(ret, body);
 
-
-	printf("%s%s%s%s%s%s%s", response, date, connection, last_modified,
-			content, Server, body);
+		printf("%s", ret);
 
 		n = write(newsock, ret, sizeof(ret));
 		//close the client socket
