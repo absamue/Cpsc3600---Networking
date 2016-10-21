@@ -77,7 +77,7 @@ int main(int argc, char *argv[]){
 
 	int sock, newsock, length, n, portno;
 	socklen_t fromlen;
-	char *buffer = "testing"; //holder for recieved messages
+	char buffer[10000]; //holder for recieved messages
 	char process[256];
 	char *response = NULL;
 	char *data = NULL;
@@ -92,6 +92,17 @@ int main(int argc, char *argv[]){
 	char *connection;
 	char *body;
 	char *ret;
+	
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+
+	date = malloc(sizeof("Date:  \n-::") +
+		sizeof(tm.tm_mon) + sizeof(tm.tm_mday) + sizeof(tm.tm_hour) 
+		+ sizeof(tm.tm_min) + sizeof(tm.tm_sec));
+	
+	last_modified = malloc(sizeof("Last-Modified:  \n-::") +
+		sizeof(tm.tm_mon+1) + sizeof(tm.tm_mday) + sizeof(tm.tm_hour) 
+		+ sizeof(tm.tm_min) + sizeof(tm.tm_sec));
 
 	//get command line flags
 	int f;
@@ -147,6 +158,9 @@ int main(int argc, char *argv[]){
 			insert(IP);
 		}
 
+
+		printf("pre read\n");
+
 		//get message
 		int n = read(newsock, process, 255);
 
@@ -160,6 +174,8 @@ int main(int argc, char *argv[]){
 			response = "HTTP/1.1 405 Method Not Allowed\nAllow: GET\n";
 			printf("%s\n", token);
 		}
+
+		printf("post GET\n");
 		
 		//next token, add or view
 		token = strtok(NULL, " ");
@@ -179,6 +195,9 @@ int main(int argc, char *argv[]){
 		else if(strstr(token, "/view?") != NULL){
 			view = true;
 
+			if(body != NULL)
+				free(body);
+
 			body = malloc(sizeof(buffer) + sizeof("\n"));
 			strcpy(body, buffer);
 			strcat(body, "\n");
@@ -186,17 +205,20 @@ int main(int argc, char *argv[]){
 		}
 		//bad action, give 404
 		else{
-			response = "HTTP/1.1 404 Not Found";
+			response = "HTTP/1.1 404 Not Found\n";
 		}
 
+		printf("post add/view\n");
 
 		//get next token, HTTP protocol
 		token = strtok(NULL, " \n");
 
 		//make sure we get 1.1
 		if(strcmp(token, "HTTP/1.1") != 0){
-			response = "HTTP/1.1 400 Bad Request";
+			response = "HTTP/1.1 400 Bad Requesti\n";
 		}
+
+		printf("post http1.1\n");
 
 		//get next token, host
 		token = strtok(NULL, " ");
@@ -209,7 +231,6 @@ int main(int argc, char *argv[]){
 		else{
 			//see if we are supposed to add to the buffer
 			if(add == true){
-				printf("\n");
 				//get the hostname
 				token = strtok(NULL, " ");
 				char *hostname = malloc(sizeof(token));
@@ -225,21 +246,18 @@ int main(int argc, char *argv[]){
 
 				//add to the buffer
 				strcat(buffer, add_data);
-				printf("%s", buffer);
 
 				//record modified time
-				time_t t = time(NULL);
-				struct tm tm = *localtime(&t);
-				last_modified = realloc(last_modified, sizeof("Last-Modified:  \n-::") +
-						sizeof(tm.tm_mon+1) + sizeof(tm.tm_mday) +
-						sizeof(tm.tm_hour) + sizeof(tm.tm_min) +
-						sizeof(tm.tm_sec));
 				sprintf(last_modified, "Last-Modified: %d-%d %d:%d:%d\n",
 						tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
 						tm.tm_sec);
+
 			}
 
 		}
+
+		printf("processing complete\n");
+
 		//PROCESSING COMPLETE, build response
 		if(response == NULL)
 			response = "HTTP/1.1 OK\n";
@@ -247,12 +265,6 @@ int main(int argc, char *argv[]){
 		connection = "Connection: close\n";
 
 		//get date
-		time_t t = time(NULL);
-		struct tm tm = *localtime(&t);
-		date = malloc(sizeof("Date:  \n-::") +
-						sizeof(tm.tm_mon) + sizeof(tm.tm_mday) +
-						sizeof(tm.tm_hour) + sizeof(tm.tm_min) +
-						sizeof(tm.tm_sec));
 		sprintf(date, "Date: %d-%d %d:%d:%d\n",
 				tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
 				tm.tm_sec);
@@ -281,6 +293,7 @@ int main(int argc, char *argv[]){
 		n = write(newsock, ret, sizeof(ret));
 		//close the client socket
 		close(newsock);
+		
 		response = NULL;
 	}
 
