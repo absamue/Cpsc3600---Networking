@@ -10,4 +10,5 @@ ahsoka: ahsoka.c
 
 starLord: starLord.c
 	gcc -o  starLord starLord.c
-
+clean:
+	rm -rf starLord chopper ahsoka

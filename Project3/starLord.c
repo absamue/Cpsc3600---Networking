@@ -90,6 +90,7 @@ int main(int argc, char *argv[]){
 	char *content;
 	char *Server;
 	char *connection;
+	char content_length[140];
 	char body[1000];
 	char ret [1256];
 	
@@ -166,7 +167,6 @@ int main(int argc, char *argv[]){
 		bzero(process, 255);
 		int n = read(newsock, process, 255);
 
-
 		//break message into tokens
 		char *token = strtok(process, " ");
 		
@@ -194,7 +194,7 @@ int main(int argc, char *argv[]){
 		else if(strstr(token, "/view?") != NULL){
 			view = true;
 
-			bzero(body, 999);
+			memset(body, '\0', sizeof(body));
 			strcpy(body, buffer);
 			strcat(body, "\n");
 
@@ -266,8 +266,10 @@ int main(int argc, char *argv[]){
 		Server = "Server: Group5/1.0\n\n";
 
 		if(view == false)
-			bzero(body, 999);
+			memset(body, '\0', sizeof(body));
 
+		bzero(content_length, 149);
+		sprintf(content_length, "Content-Length: %d\n", (strlen(body) / 8));
 
 		//build the response
 		strcpy(ret, response);
@@ -275,6 +277,7 @@ int main(int argc, char *argv[]){
 		strcat(ret, connection);
 		strcat(ret, last_modified);
 		strcat(ret, content);
+		strcat(ret, content_length);
 		strcat(ret, Server);
 		strcat(ret, body);
 
@@ -285,7 +288,10 @@ int main(int argc, char *argv[]){
 		close(newsock);
 		
 		response = NULL;
+		add = false;
+		view = false;
 		memset(ret, 0, sizeof(ret));
+		
 	}
 
 	//never reached :(
