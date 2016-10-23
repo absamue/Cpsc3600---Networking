@@ -87,9 +87,9 @@ int main(int argc, char *argv[]){
 	bool view = false;
 	char *date;
 	char *last_modified;
-	char *content;
-	char *Server;
-	char *connection;
+	char *content = "Content-Type: text/plain\n";
+	char *Server = "Server: Group5/1.0\n\n";
+	char *connection = "Connection: close\n";
 	char content_length[140];
 	char body[1000];
 	char ret [1256];
@@ -194,6 +194,7 @@ int main(int argc, char *argv[]){
 		else if(strstr(token, "/view?") != NULL){
 			view = true;
 
+			//copy the buffer into body
 			memset(body, '\0', sizeof(body));
 			strcpy(body, buffer);
 			strcat(body, "\n");
@@ -255,20 +256,18 @@ int main(int argc, char *argv[]){
 		if(response == NULL)
 			response = "HTTP/1.1 OK 200\n";
 	
-		connection = "Connection: close\n";
 
 		//get date
 		sprintf(date, "Date: %d-%d %d:%d:%d\n",
 				tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
 				tm.tm_sec);
 
-		content = "Content-Type: text/plain\n";
-		Server = "Server: Group5/1.0\n\n";
-
+		//not a view request, make sure we dont send meaningless data
 		if(view == false)
 			memset(body, '\0', sizeof(body));
 
-		bzero(content_length, 149);
+		//write the size of the message
+		memset(content_length, 0, sizeof(content_length));
 		sprintf(content_length, "Content-Length: %d\n", (strlen(body) / 8));
 
 		//build the response

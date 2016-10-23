@@ -23,10 +23,11 @@ int main(int argc, char *argv[]){
 
 	char message[256]; //orignial message from flags
 	char ret[256]; //returned message from server
-	char *action = NULL;
-	char *data;
-	char *status;
-	char body[1000];
+	char *action = NULL; //add or view
+	char *data; //data paramater from add or view
+	char *status; //response from server
+	char *header = NULL; //header if specified
+	char body[1000]; //holder for view request data
 	bool view = false;
 
 	//grab the command line flags
@@ -59,7 +60,7 @@ int main(int argc, char *argv[]){
 						 }
 						 break;
 			//header
-			case 'h':
+			case 'h': header = optarg;
 						 break;
 			//view request
 			case 'v': view = true;
@@ -70,6 +71,7 @@ int main(int argc, char *argv[]){
 		}
 	}
 
+	//view request found, overrite potential add request
 	if(view == true){
 		if(action != NULL)
 			free(action);
@@ -84,6 +86,10 @@ int main(int argc, char *argv[]){
 		exit(0);
 	}
 
+	//check header
+	if(header == NULL)
+		header = hp->h_name;
+
 	//set up socket parameters
 	serv.sin_family = AF_INET;
 	bcopy((char *)hp->h_addr, (char *)&serv.sin_addr, hp->h_length);
@@ -96,7 +102,7 @@ int main(int argc, char *argv[]){
 		exit(0);
 	}
 
-	sprintf(message, "GET %s HTTP/1.1\nHost: %s\n", action, hp->h_name);
+	sprintf(message, "GET %s HTTP/1.1\nHost: %s\n", action, header);
 
 	printf("%s", message);
 
@@ -124,6 +130,7 @@ int main(int argc, char *argv[]){
 
 		//luckily we know what the response will be, so skip through
 		//unrelated info and get body
+		memset(body, 0, sizeof(body));
 		for(int i=0; i<7; i++){
 			token = strtok(NULL, "\n");
 		}
