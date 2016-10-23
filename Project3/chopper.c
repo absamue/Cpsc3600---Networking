@@ -25,6 +25,8 @@ int main(int argc, char *argv[]){
 	char ret[256]; //returned message from server
 	char *action = NULL;
 	char *data;
+	char *status;
+	char body[1000];
 	bool view = false;
 
 	//grab the command line flags
@@ -114,13 +116,27 @@ int main(int argc, char *argv[]){
 		printf("error on read\n");
 		exit(0);
 	}
+	//get info we need out of response
 	else{
-		printf("%s", ret);
+		//get http status
+		char *token = strtok(ret, "\n");	
+		status = token;
+
+		//luckily we know what the response will be, so skip through
+		//unrelated info and get body
+		for(int i=0; i<7; i++){
+			token = strtok(NULL, "\n");
+		}
+		while(token != NULL){
+			strcat(body, token);
+			strcat(body, "\n");
+			token = strtok(NULL, "\n");
+		}
 	}
 	//stop clock and print what we got
-//	clock_t toc = clock();
-//	double time = (double)(toc - tic) / CLOCKS_PER_SEC;
-//	printf("%d	%f	%s	%s\n", att, time, message, ret);
+	clock_t toc = clock();
+	double time = (double)(toc - tic) / CLOCKS_PER_SEC;
+	printf("%d	%f	%s	%s	%s\n", att, time, data, status, body);
 
 	return 0;
 }
