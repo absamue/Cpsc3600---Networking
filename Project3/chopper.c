@@ -71,8 +71,8 @@ int main(int argc, char *argv[]){
 	if(view == true){
 		if(action != NULL)
 			free(action);
-		action = malloc(sizeof("/view?") + sizeof(data));
-		sprintf(action, "/view?%s", data);
+		action = malloc(sizeof("/view?"));
+		sprintf(action, "/view?");
 	}
 
 	//create a datagram socket
@@ -95,6 +95,8 @@ int main(int argc, char *argv[]){
 	}
 
 	sprintf(message, "GET %s HTTP/1.1\nHost: %s\n", action, hp->h_name);
+
+	printf("%s", message);
 
 	//write our message to the socket
 	n = write(sock, message, sizeof(message));
