@@ -204,8 +204,6 @@ int main(int argc, char *argv[]){
 			response = "HTTP/1.1 404 Not Found\n";
 		}
 
-		printf("post add/view\n");
-
 		//get next token, HTTP protocol
 		token = strtok(NULL, " \n");
 
@@ -239,10 +237,10 @@ int main(int argc, char *argv[]){
 				strcat(add_data, hostname);
 
 				//add to the buffer
-				if((strlen(buffer) - strlen(add_data)) > strlen(add_data))
+				if((sizeof(buffer) - strlen(buffer)) > strlen(add_data))
 					strcat(buffer, add_data);
 				else
-					printf("Buffer is full\n");
+					printf("Not enough space in buffer\n");
 
 				//record modified time
 				sprintf(last_modified, "Last-Modified: %d-%d %d:%d:%d\n",
