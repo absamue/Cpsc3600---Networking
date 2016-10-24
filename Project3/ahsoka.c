@@ -1,29 +1,6 @@
 /* Andrew Samuels
  * CPSC 3600
- * Project 1 - Case inversion server
- *
- * This file contains the implemetation for running the frank client. The
- * client can be run by compiling and then running the executable as
- * follows:
- * ./frank -p <portno> -s <server IP/name> -m <message>
- *
- * <portno> is the port that the client will attempt to connect to at the
- * server. The portno must be the same as the one that was used with the -p
- * flag when running caseInverter.
- *
- * <server IP/name> is the IP address or name of the server. This should be
- * the IP address of the physical machine that is running the server. The
- * name of the server machine can be used if the client machine is networked to
- * the server machine.
- *
- * <message> is the message that will be sent to the server to be inverted.
- *
- * Upon execution, the client will make the connection to the server, send
- * the message, recieve the response, and finally display the following
- * information:
- *
- * Connection attempts, time elapsed, original message, returned message.
- */
+ * Project 3 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,6 +10,8 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 #include <time.h>
+#include <stdbool.h>
+#include <regex.h>
 
 int main(int argc, char *argv[]){
 	clock_t tic = clock(); //start timer
@@ -43,13 +22,22 @@ int main(int argc, char *argv[]){
 	struct sockaddr_in serv, from; //address holders
 	struct hostent *hp; //host information
 
-	char orig[256]; //orignial message from flags
+	char message[256]; //orignial message from flags
 	char ret[256]; //returned message from server
-	char check[256]; //check that server is working
+	char *action = NULL;
+	char *data;
+	char *status;
+	char body[1000];
+	bool view = false;
+	int i;
+	for(i = 0; i<argc; i++){
+		if(strstr(argv[i], "-a") != NULL)
+			printf("%s\n", argv[i+1]);
+	}
 
 	//grab the command line flags
 	int f;
-	while((f = getopt(argc, argv, "p:s:m:")) != -1){
+	while((f = getopt(argc, argv, "p:s:a:h:v")) != -1){
 		switch(f){
 			//port number
 			case 'p': portno = atoi(optarg);
@@ -62,12 +50,27 @@ int main(int argc, char *argv[]){
 						 }
 						 break;
 			//message
-			case 'm': strcpy(orig, optarg);
+			case 'a': 
+						 break;
+			//header
+			case 'h':
+						 break;
+			//view request
+			case 'v': view = true;
 						 break;
 			//error message
-			default: fprintf(stderr, "Usage: frank -s <serverIP> -p <serverPort> -m <message>\n");
+			default: 
 						break;
 		}
+	}
+	
+
+
+	if(view == true){
+		if(action != NULL)
+			free(action);
+		action = malloc(sizeof("/view?"));
+		sprintf(action, "/view?");
 	}
 
 	//create a datagram socket
@@ -89,8 +92,12 @@ int main(int argc, char *argv[]){
 		exit(0);
 	}
 
+	sprintf(message, "GET %s HTTP/1.1\nHost: %s\n", action, hp->h_name);
+
+	printf("%s", message);
+
 	//write our message to the socket
-	n = write(sock, orig, 255);
+	n = write(sock, message, sizeof(message));
 	if(n < 0){
 		printf("error on write\n");
 		exit(0);
@@ -100,53 +107,33 @@ int main(int argc, char *argv[]){
 		att++;
 
 	//read returned message from the socket
-	bzero(ret, 256);
-	n = read(sock, ret, 255);
+	n = read(sock, ret, sizeof(ret));
 	if(n < 0){
 		printf("error on read\n");
 		exit(0);
 	}
+	//get info we need out of response
+	else{
+		//get http status
+		char *token = strtok(ret, "\n");	
+		status = token;
 
-	//open up the socket again since it's closed by the server
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if(connect(sock, (struct sockaddr *) &serv, length) < 0){
-		printf("error on secoond connect\n");
-		exit(0);
+		//luckily we know what the response will be, so skip through
+		//unrelated info and get body
+		memset(body, 0, sizeof(body));
+		for(int i=0; i<7; i++){
+			token = strtok(NULL, "\n");
+		}
+		while(token != NULL){
+			strcat(body, token);
+			strcat(body, "\n");
+			token = strtok(NULL, "\n");
+		}
 	}
-
-	//send returned message again to verify
-	n = write(sock, ret, 255);
-	if(n < 0){
-		printf("error on second write\n");
-		exit(0);
-	}
-	//increment attempts
-	else
-		att++;
-
-	//read second returned message from the socket
-	bzero(check, 256);
-	n = read(sock, check, 255);
-	if(n < 0){
-		printf("error on second read\n");
-		exit(0);
-	}
-
-	close(sock);
-
 	//stop clock and print what we got
 	clock_t toc = clock();
 	double time = (double)(toc - tic) / CLOCKS_PER_SEC;
-	printf("%d	%f	%s	%s	", att, time, orig, ret);
-
-	//confrim inversion worked
-	if(strcmp(orig, check) == 0){
-		printf("	Verified!\n");
-	}
-	else{
-		printf("\nVERIFICATION FAILED\n");
-		printf("Original: %s	Double Inverted: %s\n", orig, check);
-	}
+	printf("%d	%f	%s	%s	%s\n", att, time, data, status, body);
 
 	return 0;
 }
