@@ -1,6 +1,21 @@
-/* Andrew Samuels
- * CPSC 3600
- * Project 3 */
+/* Andrew Samuels - absamue
+	Nicole Michaud - nmichau
+	Parth Patel - pspatel
+	Stuart Jackson - sjacks
+
+	CPSC Project 3 - HTTP Server and clients
+	Client 1 - Chopper
+
+	The first client is intended to send HTTP/1.1 add and view requests. The
+	add functionality will take the parameter of the -a flag and send it as
+	an add request to the server. The view functionality will request for
+	the server to return the contents of the servers buffer as a payload in
+	the response.
+
+	Before terminating, the program will display the number of sent
+	requests, the time taken in seconds, the input string, the returned HTTP
+	status code, and the response payload (if a view request was sent)
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -22,7 +37,7 @@ int main(int argc, char *argv[]){
 	struct hostent *hp; //host information
 
 	char message[256]; //orignial message from flags
-	char ret[256]; //returned message from server
+	char ret[1256]; //returned message from server
 	char *action = NULL; //add or view
 	char *data; //data paramater from add or view
 	char *status; //response from server

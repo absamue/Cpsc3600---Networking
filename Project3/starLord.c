@@ -1,7 +1,28 @@
-/* Andrew Samuels
- * CPSC 3600
- * Project 3 
- */
+/* Andrew Samuels - absamue
+	Nicole Michaud - nmichau
+	Parth Patel - pspatel
+	Stuart Jackson - sjacks
+
+	CPSC Project 3 - HTTP Server and clients
+	Server - starLord
+
+	The server is capable of receiving HTTP/1.1 messages. After receiving a
+	message, the server will process the message to determine if it was a
+	valid request. The server contains a local buffer that is used to hold
+	messages sent from the requests. Along with this, the server supports
+	add and view functionality, where add will append the related data to
+	the buffer and view will send the entire contents of the buffer as part
+	of the HTTP response.
+
+	Once the server has successfully processed the request, it will build an
+	appropriate response to send back to the socket depending on the add or
+	view command received.
+
+	The request and response are displayed on standard out.
+
+	Upon CTRL+C termination, the server will display the number of received
+	connections and a list of associated IP's.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -78,23 +99,24 @@ int main(int argc, char *argv[]){
 	int sock, newsock, length, n, portno;
 	socklen_t fromlen;
 	char buffer[1000]; //holder for recieved messages
-	char process[256];
-	char *response = NULL;
-	char data[80];
+	char process[256]; //holder for read message
+	char *response = NULL; //HTTP response
+	char data[80]; //message to add to buffer
 	struct sockaddr_in server, from; //address holders
 	char IP[INET_ADDRSTRLEN];
-	bool add = false;
+	bool add = false; //switch between add and view requests
 	bool view = false;
 	char *date;
 	char *last_modified;
 	char *content = "Content-Type: text/plain\n";
-	char *Server = "Server: Group5/1.0\n\n";
+	char *Server = "Server: Group5/1.1\n\n";
 	char *connection = "Connection: close\n";
 	char content_length[140];
 	char body[1000];
-	char ret [1256];
-	
-	time_t t = time(NULL);
+	char ret [1256]; //message to send
+
+	//set up correct size of time items
+	time_t t = time(&t);
 	struct tm tm = *localtime(&t);
 
 	date = malloc(sizeof("Date:  \n-::") +
@@ -166,6 +188,8 @@ int main(int argc, char *argv[]){
 		//get message
 		bzero(process, 255);
 		int n = read(newsock, process, 255);
+		printf("--------------------------------\n");
+		printf("%s\n", process);
 
 		//break message into tokens
 		char *token = strtok(process, " ");
@@ -244,6 +268,9 @@ int main(int argc, char *argv[]){
 					printf("Not enough space in buffer\n");
 
 				//record modified time
+				time(&t);
+				tm = *localtime(&t);
+				memset(last_modified, 0, sizeof(last_modified));
 				sprintf(last_modified, "Last-Modified: %d-%d %d:%d:%d\n",
 						tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
 						tm.tm_sec);
@@ -258,6 +285,9 @@ int main(int argc, char *argv[]){
 	
 
 		//get date
+		time(&t);
+		tm = *localtime(&t);
+		memset(data, 0, sizeof(date));
 		sprintf(date, "Date: %d-%d %d:%d:%d\n",
 				tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
 				tm.tm_sec);
@@ -272,8 +302,8 @@ int main(int argc, char *argv[]){
 
 		//build the response
 		strcpy(ret, response);
-		strcat(ret, date);
 		strcat(ret, connection);
+		strcat(ret, date);
 		strcat(ret, last_modified);
 		strcat(ret, content);
 		strcat(ret, content_length);
@@ -281,11 +311,13 @@ int main(int argc, char *argv[]){
 		strcat(ret, body);
 
 		printf("%s", ret);
-
+		printf("--------------------------------\n");
+		
 		n = write(newsock, ret, sizeof(ret));
 		//close the client socket
 		close(newsock);
 		
+		//reset some of the things we used
 		response = NULL;
 		add = false;
 		view = false;
