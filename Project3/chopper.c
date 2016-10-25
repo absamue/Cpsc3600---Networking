@@ -1,7 +1,7 @@
 /* Andrew Samuels - absamue
 	Nicole Michaud - nmichau
 	Parth Patel - pspatel
-	Stuart Jackson - sjacks
+	Stuart Jackson - sljacks
 
 	CPSC Project 3 - HTTP Server and clients
 	Client 1 - Chopper
@@ -118,8 +118,6 @@ int main(int argc, char *argv[]){
 	}
 
 	sprintf(message, "GET %s HTTP/1.1\nHost: %s\n", action, header);
-
-	printf("%s", message);
 
 	//write our message to the socket
 	n = write(sock, message, sizeof(message));

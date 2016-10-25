@@ -1,7 +1,7 @@
 /* Andrew Samuels - absamue
 	Nicole Michaud - nmichau
 	Parth Patel - pspatel
-	Stuart Jackson - sjacks
+	Stuart Jackson - sljacks
 
 	CPSC Project 3 - HTTP Server and clients
 	Client 2 - ahsoka
