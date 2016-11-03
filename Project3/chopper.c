@@ -1,6 +1,21 @@
-/* Andrew Samuels
- * CPSC 3600
- * Project 3 */
+/* Andrew Samuels - absamue
+	Nicole Michaud - nmichau
+	Parth Patel - pspatel
+	Stuart Jackson - sljacks
+
+	CPSC Project 3 - HTTP Server and clients
+	Client 1 - Chopper
+
+	The first client is intended to send HTTP/1.1 add and view requests. The
+	add functionality will take the parameter of the -a flag and send it as
+	an add request to the server. The view functionality will request for
+	the server to return the contents of the servers buffer as a payload in
+	the response.
+
+	Before terminating, the program will display the number of sent
+	requests, the time taken in seconds, the input string, the returned HTTP
+	status code, and the response payload (if a view request was sent)
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -22,11 +37,12 @@ int main(int argc, char *argv[]){
 	struct hostent *hp; //host information
 
 	char message[256]; //orignial message from flags
-	char ret[256]; //returned message from server
-	char *action = NULL;
-	char *data;
-	char *status;
-	char body[1000];
+	char ret[1256]; //returned message from server
+	char *action = NULL; //add or view
+	char *data; //data paramater from add or view
+	char *status; //response from server
+	char *header = NULL; //header if specified
+	char body[1000]; //holder for view request data
 	bool view = false;
 
 	//grab the command line flags
@@ -59,7 +75,7 @@ int main(int argc, char *argv[]){
 						 }
 						 break;
 			//header
-			case 'h':
+			case 'h': header = optarg;
 						 break;
 			//view request
 			case 'v': view = true;
@@ -70,6 +86,7 @@ int main(int argc, char *argv[]){
 		}
 	}
 
+	//view request found, overrite potential add request
 	if(view == true){
 		if(action != NULL)
 			free(action);
@@ -84,6 +101,10 @@ int main(int argc, char *argv[]){
 		exit(0);
 	}
 
+	//check header
+	if(header == NULL)
+		header = hp->h_name;
+
 	//set up socket parameters
 	serv.sin_family = AF_INET;
 	bcopy((char *)hp->h_addr, (char *)&serv.sin_addr, hp->h_length);
@@ -96,9 +117,7 @@ int main(int argc, char *argv[]){
 		exit(0);
 	}
 
-	sprintf(message, "GET %s HTTP/1.1\nHost: %s\n", action, hp->h_name);
-
-	printf("%s", message);
+	sprintf(message, "GET %s HTTP/1.1\nHost: %s\n", action, header);
 
 	//write our message to the socket
 	n = write(sock, message, sizeof(message));
@@ -124,6 +143,7 @@ int main(int argc, char *argv[]){
 
 		//luckily we know what the response will be, so skip through
 		//unrelated info and get body
+		memset(body, 0, sizeof(body));
 		for(int i=0; i<7; i++){
 			token = strtok(NULL, "\n");
 		}
