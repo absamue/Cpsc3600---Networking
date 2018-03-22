@@ -1,11 +1,11 @@
-#TCP Echo Server and Clients
+# TCP Echo Server and Clients
 
 This project contains a TCP echo server, **caseConverter**, and two clients
 **bellower** and **frank**. The project can be run by using the makefile to
 generate the executables, and then follow the instructions below to run
 each individual program.
 
-##caseConverter Server
+## caseConverter Server
 
 caseConverter.c contains the implementation for running the server. The server
 can be run by compiling and then running the executable as follows:
@@ -21,7 +21,7 @@ output the message and then invert the case of the letters in the
 message. After the inversion, the message will be written back to the
 socket and the server will continue to wait for a new connection.
 
-##bellower Client
+## bellower Client
 
 bellower.c contains the implemetation for running the bellower client. The
 client can be run by compiling and then running the executable as
@@ -48,7 +48,7 @@ information:
 3. Original message 
 4. returned message.
 
-##frank Client
+## frank Client
 
 frank.c contains the implemetation for running the frank client. The
 client can be run by compiling and then running the executable as
@@ -80,7 +80,7 @@ The program will then finally display the following information:
 4. Returned message
 5. Verifvication status
 
-##makefile
+## makefile
 
 The makefile will automatically compile the files to produce the
 appropirate executable name as in the above examples.
